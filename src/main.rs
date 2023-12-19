@@ -64,8 +64,9 @@ fn handle_client(stream: TcpStream) {
 }
 
 fn main() {
-    let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
-    println!("Listening for connections on port {}", 8080);
+    let port = std::env::var("PORT").unwrap_or("8080".to_string());
+    let listener = TcpListener::bind("0.0.0.0:".to_string() + port.as_str()).unwrap();
+    println!("Listening for connections on port {}", port);
 
     for stream in listener.incoming() {
         match stream {
