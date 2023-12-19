@@ -26,7 +26,7 @@ fn handle_write(reqResponse: Response, mut stream: TcpStream) {
             .unwrap()
             .to_str()
             .unwrap()
-        + "; charset=UTF-8\r\n\r\n"
+        + "\r\n\r\n"
         + reqResponse.text().unwrap().as_str()
         + "\r\n";
     match stream.write(response.as_bytes()) {
