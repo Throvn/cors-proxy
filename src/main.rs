@@ -1,9 +1,13 @@
+#![feature(slice_pattern)]
 // Updated example from http://rosettacode.org/wiki/Hello_world/Web_server#Rust
 // to work with Rust 1.0 beta
 
+use core::slice::SlicePattern;
 use reqwest;
 use reqwest::blocking::Response;
-use std::io::{Error, Read, Write};
+use rocket::response;
+use std::borrow::Borrow;
+use std::io::{BufWriter, Error, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::thread;
 
@@ -17,19 +21,42 @@ fn handle_read(mut stream: &TcpStream) -> Result<String, Error> {
     }
 }
 
-fn handle_write(reqResponse: Response, mut stream: TcpStream) {
-    let response = "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nContent-Type: "
-        .to_string()
-        + reqResponse
-            .headers()
-            .get("content-type")
-            .unwrap()
-            .to_str()
-            .unwrap()
-        + "\r\n\r\n"
-        + reqResponse.text().unwrap().as_str()
-        + "\r\n";
-    match stream.write(response.as_bytes()) {
+fn handle_write(mut req_response: Response, mut stream: TcpStream) {
+    unsafe {
+        println!(
+            "{}",
+            std::str::from_utf8_unchecked(
+                req_response
+                    .headers()
+                    .get("content-type")
+                    .unwrap()
+                    .as_bytes()
+            )
+        );
+    }
+
+    let mut req_res = vec![];
+    let size = req_response.copy_to(&mut req_res).unwrap();
+    println!("Response size: {}", size);
+
+    let res_header = req_response.headers().get("content-type").unwrap();
+
+    let response: Vec<u8> = [
+        b"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nContent-Type: ",
+        res_header.as_bytes(),
+        b"\r\nContent-Length: ",
+        req_res.len().to_string().as_bytes(),
+        // req_response
+        //     .headers()
+        //     .get("content-length")
+        //     .unwrap()
+        //     .as_bytes(),
+        b"\r\n\r\n",
+        req_res.as_slice(),
+        b"\r\n",
+    ]
+    .concat();
+    match stream.write(response.as_slice()) {
         Ok(_) => println!("Response sent"),
         Err(e) => println!("Failed sending response: {}", e),
     }
@@ -59,8 +86,9 @@ fn handle_client(stream: TcpStream) {
         println!("Failed to get response: {}", e);
         return;
     }
+    let response = response.unwrap();
 
-    handle_write(response.unwrap(), stream);
+    handle_write(response, stream);
 }
 
 fn main() {
