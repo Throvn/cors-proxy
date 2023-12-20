@@ -1,13 +1,9 @@
-#![feature(slice_pattern)]
 // Updated example from http://rosettacode.org/wiki/Hello_world/Web_server#Rust
 // to work with Rust 1.0 beta
 
-use core::slice::SlicePattern;
 use reqwest;
 use reqwest::blocking::Response;
-use rocket::response;
-use std::borrow::Borrow;
-use std::io::{BufWriter, Error, Read, Write};
+use std::io::{Error, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::thread;
 
